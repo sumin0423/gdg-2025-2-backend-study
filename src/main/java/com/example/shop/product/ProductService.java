@@ -3,75 +3,69 @@ package com.example.shop.product;
 import com.example.shop.product.dto.ProductCreateRequest;
 import com.example.shop.product.dto.ProductResponse;
 import com.example.shop.product.dto.ProductUpdateRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProductService {
 
-    // 임시 메모리 저장소 (레포지토리 없이)
-    private final Map<Long, Product> store = new ConcurrentHashMap<>();
-    private final AtomicLong seq = new AtomicLong(0);
+    private final ProductRepository productRepository;
 
-    /** 상품 생성: ID 발급 후 저장, ID 반환 */
-    public Long create(ProductCreateRequest req) {
-        if (req.getName() == null || req.getName().isBlank()) {
-            throw new IllegalArgumentException("상품명(name)은 필수입니다.");
-        }
-        Long id = seq.incrementAndGet();
-        Product p = new Product(
-                id,
-                req.getName(),
-                defaultInt(req.getPrice(), 0),
-                defaultInt(req.getStock(), 0),
-                req.getDescription(),
-                req.getStatus() == null ? "ON_SALE" : req.getStatus()
-        );
-        store.put(id, p);
-        return id;
-    }
+    @Transactional
+    public ProductResponse create(ProductCreateRequest req) {
+        Product p = Product.builder()
+                .name(req.getName())
+                .price(req.getPrice())
+                .stock(req.getStock())
+                .description(req.getDescription())
+                .status(req.getStatus())
+                .build();
 
-    /** 전체 조회 */
-    public List<ProductResponse> findAll() {
-        return store.values().stream()
-                .sorted(Comparator.comparing(Product::getId))
-                .map(ProductResponse::from)
-                .collect(Collectors.toList());
-    }
-
-    /** 단건 조회 */
-    public ProductResponse findOne(Long id) {
-        Product p = store.get(id);
-        if (p == null) throw new NoSuchElementException("상품이 존재하지 않습니다. id=" + id);
+        productRepository.save(p);
         return ProductResponse.from(p);
     }
 
-    /** 수정 */
-    public void update(Long id, ProductUpdateRequest req) {
-        Product p = store.get(id);
-        if (p == null) throw new NoSuchElementException("상품이 존재하지 않습니다. id=" + id);
-
-        if (req.getName() != null)        p.setName(req.getName());
-        if (req.getPrice() != null)       p.setPrice(req.getPrice());
-        if (req.getStock() != null)       p.setStock(req.getStock());
-        if (req.getDescription() != null) p.setDescription(req.getDescription());
-        if (req.getStatus() != null)      p.setStatus(req.getStatus());
-
-        store.put(id, p); // 덮어쓰기
-    }
-
-    /** 삭제 */
-    public void delete(Long id) {
-        if (store.remove(id) == null) {
-            throw new NoSuchElementException("상품이 존재하지 않습니다. id=" + id);
+    private Product findEntity(Long id) {
+        Product p = productRepository.findById(id);
+        if (p == null) {
+            throw new IllegalArgumentException("Product not found: " + id);
         }
+        return p;
     }
 
-    private int defaultInt(Integer v, int def) {
-        return v == null ? def : v;
+    public ProductResponse get(Long id) {
+        return ProductResponse.from(findEntity(id));
+    }
+
+    public List<ProductResponse> list() {
+        return productRepository.findAll().stream()
+                .map(ProductResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public ProductResponse update(Long id, ProductUpdateRequest req) {
+        Product p = findEntity(id);
+        p.setName(req.getName());
+        p.setPrice(req.getPrice());
+        p.setStock(req.getStock());
+        p.setDescription(req.getDescription());
+        p.setStatus(req.getStatus());
+
+        // JPA 영속성 컨텍스트 때문에 save 호출 안 해도 되지만,
+        // Repository 패턴 통일을 위해 호출해도 무방
+        productRepository.save(p);
+
+        return ProductResponse.from(p);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        productRepository.deleteById(id);
     }
 }

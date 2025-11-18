@@ -1,18 +1,31 @@
 package com.example.shop.product;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@Entity
+@Table(name = "product")
 public class Product {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;        // 상품명
-    private Integer price;      // 가격
-    private Integer stock;      // 재고 수량
-    private String description; // 설명
-    private String status;      // 상태 (e.g. "ON_SALE", "SOLD_OUT")
+
+    @Column(nullable = false, length = 100, unique = true)
+    private String name;
+
+    @Column(nullable = false)
+    private Integer price;
+
+    @Column(nullable = false)
+    private Integer stock;
+
+    @Column(length = 1000)
+    private String description;
+
+    @Column(nullable = false, length = 20)
+    private String status; // e.g. "ON_SALE", "SOLD_OUT"
 }

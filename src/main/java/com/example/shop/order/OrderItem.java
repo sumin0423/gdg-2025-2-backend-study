@@ -1,13 +1,17 @@
 package com.example.shop.order;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-@Getter
-@NoArgsConstructor @AllArgsConstructor
 public class OrderItem {
     private Long productId;
-    private int price;     // 단가
-    private int quantity;  // 수량
+    private Integer price;
+    private Integer quantity;
+
+    public OrderItem(Long productId, Integer price, Integer quantity) {
+        this.productId = productId;
+        this.price = price;
+        this.quantity = quantity;
+    }
+
+    public Long getProductId() { return productId; }
+    public Integer getPrice() { return price; }
+    public Integer getQuantity() { return quantity; }
 }

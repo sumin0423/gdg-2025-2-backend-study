@@ -1,0 +1,6 @@
+### 초기화 요청
+POST http://localhost:8080/api/dev/init
+
+### Todo 생성 요청
+POST http://localhost:8080/api/todos
+Content-Type: application/json
